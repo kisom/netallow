@@ -131,23 +131,23 @@ type Stub struct{}
 
 // Permitted always returns true, but prints a warning message alerting
 // that whitelisting is stubbed.
-func (wl *Stub) Permitted(ip net.IP) bool {
+func (wl Stub) Permitted(ip net.IP) bool {
 	log.Printf("WARNING: whitelist check for %s but whitelisting is stubbed", ip)
 	return true
 }
 
 // Add prints a warning message about whitelisting being stubbed.
-func (wl *Stub) Add(ip net.IP) {
+func (wl Stub) Add(ip net.IP) {
 	log.Printf("WARNING: IP %s added to whitelist but whitelisting is stubbed", ip)
 }
 
 // Remove prints a warning message about whitelisting being stubbed.
-func (wl *Stub) Remove(ip net.IP) {
+func (wl Stub) Remove(ip net.IP) {
 	log.Printf("WARNING: IP %s removed from whitelist but whitelisting is stubbed", ip)
 }
 
 // NewStub returns a new stubbed whitelister.
-func NewStub() *Stub {
+func NewStub() Stub {
 	log.Println("WARNING: whitelisting is being stubbed")
-	return &Stub{}
+	return Stub{}
 }

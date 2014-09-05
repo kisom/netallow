@@ -106,7 +106,6 @@ func TestStubWhitelist(t *testing.T) {
 	}
 }
 
-var nlu NetConnLookup
 var shutdown = make(chan struct{}, 1)
 var proceed = make(chan struct{}, 0)
 
@@ -134,7 +133,7 @@ func setupTestServer(t *testing.T, wl Whitelist) {
 
 func handleTestConnection(conn net.Conn, wl Whitelist, t *testing.T) {
 	defer conn.Close()
-	ip, err := nlu.Address(conn)
+	ip, err := NetConnLookup(conn)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -208,36 +207,18 @@ func TestBasicFailedLoad(t *testing.T) {
 }
 
 func TestNetConnChecks(t *testing.T) {
-	var nlu NetConnLookup
-	if _, err := nlu.Address(); err == nil {
-		t.Fatal("Address should fail with no arguments")
-	}
-
-	if _, err := nlu.Address(nil, nil); err == nil {
-		t.Fatal("Address should fail with too many arguments")
-	}
-
-	if _, err := nlu.Address(nil); err == nil {
+	if _, err := NetConnLookup(nil); err == nil {
 		t.Fatal("Address should fail with an invalid argument")
 	}
 }
 
 func TestHTTPRequestLookup(t *testing.T) {
-	var nlu HTTPRequestLookup
-	if _, err := nlu.Address(); err == nil {
-		t.Fatal("Address should fail with no arguments")
-	}
-
-	if _, err := nlu.Address(nil, nil); err == nil {
-		t.Fatal("Address should fail with too many arguments")
-	}
-
-	if _, err := nlu.Address(nil); err == nil {
+	if _, err := HTTPRequestLookup(nil); err == nil {
 		t.Fatal("Address should fail with an invalid argument")
 	}
 
 	req := new(http.Request)
-	if _, err := nlu.Address(req); err == nil {
+	if _, err := HTTPRequestLookup(req); err == nil {
 		t.Fatal("Address should fail with an invalid argument")
 	}
 
@@ -286,15 +267,14 @@ func (conn *stubConn) SetWriteDeadline(t time.Time) error {
 }
 
 func TestStubConn(t *testing.T) {
-	var nlu NetConnLookup
 	var conn = new(stubConn)
-	_, err := nlu.Address(conn)
+	_, err := NetConnLookup(conn)
 	if err == nil {
 		t.Fatal("Address should fail to return an address")
 	}
 
 	conn.Fake = true
-	_, err = nlu.Address(conn)
+	_, err = NetConnLookup(conn)
 	if err == nil {
 		t.Fatal("Address should fail to return an address")
 	}

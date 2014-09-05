@@ -28,10 +28,7 @@ this package:
   (i.e. administration of the whitelist) is not yet implemented,
   perhaps to keep whitelists in the system's flow.
 
-There is a second type provided here: the `Lookup`. A `Lookup`
-is a mechanism for converting some arguments to a `net.IP` value;
-most often, it's a convenience for performing a common set of
-operations. Two implementations are provided here:
+Two convenience functions are provided here for extracting IP addresses:
 
 * `NetConnLookup` accepts a `net.Conn` value, and returns the `net.IP`
   value from the connection.

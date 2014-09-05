@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -35,6 +36,16 @@ func testHTTPResponse(url string, t *testing.T) string {
 	}
 	resp.Body.Close()
 	return string(body)
+}
+
+func testWorker(url string, t *testing.T, wg *sync.WaitGroup) {
+	for i := 0; i < 100; i++ {
+		response := testHTTPResponse(url, t)
+		if response != "NO" {
+			t.Fatalf("Expected NO, but got %s", response)
+		}
+	}
+	wg.Done()
 }
 
 func TestStubHTTP(t *testing.T) {
@@ -96,6 +107,22 @@ func TestBasicHTTPDefaultDeny(t *testing.T) {
 	if response != expected {
 		t.Fatalf("Expected %s, but got %s", expected, response)
 	}
+}
+
+func TestBasicHTTPWorkers(t *testing.T) {
+	wl := NewBasic()
+	h := NewHandler(testAllowHandler, testDenyHandler, wl)
+	srv := httptest.NewServer(h)
+	wg := new(sync.WaitGroup)
+	defer srv.Close()
+
+	for i := 0; i < 16; i++ {
+		wg.Add(1)
+		go testWorker(srv.URL, t, wg)
+	}
+
+	wg.Wait()
+
 }
 
 func TestFailHTTP(t *testing.T) {

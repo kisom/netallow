@@ -27,45 +27,57 @@ type ACL interface {
 	Remove(net.IP)
 }
 
+func validIP(ip net.IP) bool {
+	if len(ip) == 4 {
+		return true
+	}
+
+	if len(ip) == 16 {
+		return true
+	}
+
+	return false
+}
+
 // Basic implements a basic map-backed whitelister that uses an
 // RWMutex for conccurency. IPv4 addresses are treated differently
 // than an IPv6 address; namely, the IPv4 localhost will not match
 // the IPv6 localhost.
 type Basic struct {
-	sync.RWMutex
+	lock   sync.RWMutex
 	ipList map[string]bool
 }
 
 // Permitted returns true if the IP has been whitelisted.
 func (wl *Basic) Permitted(ip net.IP) bool {
-	if ip == nil {
+	if !validIP(ip) {
 		return false
 	}
 
-	wl.RLock()
-	defer wl.RUnlock()
+	wl.lock.RLock()
+	defer wl.lock.RUnlock()
 	return wl.ipList[ip.String()]
 }
 
 // Add whitelists an IP.
 func (wl *Basic) Add(ip net.IP) {
-	if ip == nil {
+	if !validIP(ip) {
 		return
 	}
 
-	wl.Lock()
-	defer wl.Unlock()
+	wl.ock.Lock()
+	defer wl.lock.Unlock()
 	wl.ipList[ip.String()] = true
 }
 
 // Remove clears the IP from the whitelist.
 func (wl *Basic) Remove(ip net.IP) {
-	if ip == nil {
+	if !validIP(ip) {
 		return
 	}
 
-	wl.Lock()
-	defer wl.Unlock()
+	wl.lock.Lock()
+	defer wl.lock.Unlock()
 	delete(wl.ipList, ip.String())
 }
 
@@ -79,10 +91,10 @@ func NewBasic() *Basic {
 // DumpBasic returns a whitelist as a byte slice where each IP is on
 // its own line.
 func DumpBasic(wl *Basic) []byte {
-	wl.RLock()
-	defer wl.RUnlock()
+	wl.lock.RLock()
+	defer wl.lock.RUnlock()
 
-	var addrs []string
+	var addrs = make([]string, 0, len(wl.ipList))
 	for ip := range wl.ipList {
 		addrs = append(addrs, ip)
 	}

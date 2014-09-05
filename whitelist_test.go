@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"testing"
+	"time"
 )
 
 type StringLookup struct{}
@@ -72,6 +73,11 @@ func TestBasicWhitelist(t *testing.T) {
 	}
 
 	delIPString(wl, "127.0.0.1", t)
+	if checkIPString(wl, "127.0.0.1", t) {
+		t.Fatal("whitelist should have denied address")
+	}
+
+	addIPString(wl, "::1", t)
 	if checkIPString(wl, "127.0.0.1", t) {
 		t.Fatal("whitelist should have denied address")
 	}
@@ -203,6 +209,64 @@ func TestHTTPRequestLookup(t *testing.T) {
 	req := new(http.Request)
 	if _, err := nlu.Address(req); err == nil {
 		t.Fatal("Address should fail with an invalid argument")
+	}
+
+}
+
+type stubConn struct {
+	Fake   bool
+	Global bool
+}
+
+func (conn *stubConn) Read(b []byte) (n int, err error) {
+	return 0, nil
+}
+
+func (conn *stubConn) Write(b []byte) (n int, err error) {
+	return 0, nil
+}
+
+func (conn *stubConn) Close() error {
+	return nil
+}
+
+func (conn *stubConn) LocalAddr() net.Addr {
+	return nil
+}
+
+func (conn *stubConn) RemoteAddr() net.Addr {
+	if !conn.Fake {
+		return nil
+	}
+	return &net.IPAddr{
+		IP: net.IP{},
+	}
+}
+
+func (conn *stubConn) SetDeadline(t time.Time) error {
+	return nil
+}
+
+func (conn *stubConn) SetReadDeadline(t time.Time) error {
+	return nil
+}
+
+func (conn *stubConn) SetWriteDeadline(t time.Time) error {
+	return nil
+}
+
+func TestStubConn(t *testing.T) {
+	var nlu NetConnLookup
+	var conn = new(stubConn)
+	_, err := nlu.Address(conn)
+	if err == nil {
+		t.Fatal("Address should fail to return an address")
+	}
+
+	conn.Fake = true
+	_, err = nlu.Address(conn)
+	if err == nil {
+		t.Fatal("Address should fail to return an address")
 	}
 
 }

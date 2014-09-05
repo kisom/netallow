@@ -11,8 +11,16 @@ import (
 // A Whitelist stores a list of permitted IP addresses, and handles
 // concurrency as needed.
 type Whitelist interface {
+	// Permitted takes an IP address, and returns true if the
+	// IP address is whitelisted (e.g. permitted access).
 	Permitted(net.IP) bool
+
+	// Add takes an IP address and adds it to the whitelist so
+	// that it is now permitted.
 	Add(net.IP)
+
+	// Remove takes an IP address and drops it from the whitelist
+	// so that it is no longer permitted.
 	Remove(net.IP)
 }
 

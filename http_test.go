@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -81,6 +82,19 @@ func TestBasicHTTP(t *testing.T) {
 	response = testHTTPResponse(srv.URL, t)
 	if response != "NO" {
 		t.Fatalf("Expected NO, but got %s", response)
+	}
+}
+
+func TestBasicHTTPDefaultDeny(t *testing.T) {
+	wl := NewBasic()
+	h := NewHandler(testAllowHandler, nil, wl)
+	srv := httptest.NewServer(h)
+	defer srv.Close()
+
+	expected := "Unauthorized"
+	response := strings.TrimSpace(testHTTPResponse(srv.URL, t))
+	if response != expected {
+		t.Fatalf("Expected %s, but got %s", expected, response)
 	}
 }
 

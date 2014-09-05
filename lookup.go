@@ -31,15 +31,17 @@ func (lu NetConnLookup) Address(args ...interface{}) (net.IP, error) {
 		return nil, errors.New("whitelist: lookup requires a net.Conn")
 	}
 
-	addr, _, err := net.SplitHostPort(conn.RemoteAddr().String())
+	netAddr := conn.RemoteAddr()
+	if netAddr == nil {
+		return nil, errors.New("No error returned")
+	}
+
+	addr, _, err := net.SplitHostPort(netAddr.String())
 	if err != nil {
 		return nil, err
 	}
 
 	ip := net.ParseIP(addr)
-	if ip == nil {
-		return nil, errors.New("whitelist: no address found")
-	}
 	return ip, nil
 }
 
@@ -67,9 +69,6 @@ func (lu HTTPRequestLookup) Address(args ...interface{}) (net.IP, error) {
 	}
 
 	ip := net.ParseIP(addr)
-	if ip == nil {
-		return nil, errors.New("whitelist: no address found")
-	}
 	return ip, nil
 
 }
@@ -108,6 +107,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if h.whitelist.Permitted(ip) {
 		h.allowHandler.ServeHTTP(w, req)
 	} else {
-		h.denyHandler.ServeHTTP(w, req)
+		if h.denyHandler == nil {
+			status := http.StatusUnauthorized
+			http.Error(w, http.StatusText(status), status)
+		} else {
+			h.denyHandler.ServeHTTP(w, req)
+		}
 	}
 }

@@ -2,6 +2,7 @@ package whitelist
 
 import (
 	"errors"
+	"log"
 	"net"
 	"net/http"
 )
@@ -71,4 +72,43 @@ func (lu HTTPRequestLookup) Address(args ...interface{}) (net.IP, error) {
 	}
 	return ip, nil
 
+}
+
+// WhitelistHandler wraps an HTTP handler with IP whitelisting.
+type WhitelistHandler struct {
+	allowHandler http.Handler
+	denyHandler  http.Handler
+	whitelist    Whitelist
+	lookup       Lookup
+}
+
+// NewWhitelistHandler returns a new whitelisting-wrapped HTTP
+// handler. The allow handler should contain a handler that will be
+// called if the request is whitelisted; the deny handler should
+// contain a handler that will be called in the request is not
+// whitelisted.
+func NewWhitelistHandler(allow, deny http.Handler, wl Whitelist) http.Handler {
+	return &WhitelistHandler{
+		allowHandler: allow,
+		denyHandler:  deny,
+		whitelist:    wl,
+		lookup:       HTTPRequestLookup{},
+	}
+}
+
+// ServeHTTP wraps the request in a whitelist check.
+func (h *WhitelistHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	ip, err := h.lookup.Address(req)
+	if err != nil {
+		log.Printf("failed to lookup request address: %v", err)
+		status := http.StatusInternalServerError
+		http.Error(w, http.StatusText(status), status)
+		return
+	}
+
+	if h.whitelist.Permitted(ip) {
+		h.allowHandler.ServeHTTP(w, req)
+	} else {
+		h.denyHandler.ServeHTTP(w, req)
+	}
 }

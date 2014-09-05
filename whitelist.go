@@ -65,7 +65,7 @@ func (wl *Basic) Add(ip net.IP) {
 		return
 	}
 
-	w.lock.Lock()
+	wl.lock.Lock()
 	defer wl.lock.Unlock()
 	wl.ipList[ip.String()] = true
 }

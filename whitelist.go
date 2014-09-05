@@ -44,7 +44,7 @@ func validIP(ip net.IP) bool {
 // than an IPv6 address; namely, the IPv4 localhost will not match
 // the IPv6 localhost.
 type Basic struct {
-	lock   sync.RWMutex
+	lock   *sync.Mutex
 	ipList map[string]bool
 }
 
@@ -54,9 +54,10 @@ func (wl *Basic) Permitted(ip net.IP) bool {
 		return false
 	}
 
-	wl.lock.RLock()
-	defer wl.lock.RUnlock()
-	return wl.ipList[ip.String()]
+	wl.lock.Lock()
+	permitted := wl.ipList[ip.String()]
+	wl.lock.Unlock()
+	return permitted
 }
 
 // Add whitelists an IP.
@@ -84,6 +85,7 @@ func (wl *Basic) Remove(ip net.IP) {
 // NewBasic returns a new initialised basic whitelist.
 func NewBasic() *Basic {
 	return &Basic{
+		lock:   new(sync.Mutex),
 		ipList: map[string]bool{},
 	}
 }
@@ -91,8 +93,8 @@ func NewBasic() *Basic {
 // DumpBasic returns a whitelist as a byte slice where each IP is on
 // its own line.
 func DumpBasic(wl *Basic) []byte {
-	wl.lock.RLock()
-	defer wl.lock.RUnlock()
+	wl.lock.Lock()
+	defer wl.lock.Unlock()
 
 	var addrs = make([]string, 0, len(wl.ipList))
 	for ip := range wl.ipList {

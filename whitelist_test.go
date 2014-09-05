@@ -2,6 +2,7 @@ package whitelist
 
 import (
 	"errors"
+	"io/ioutil"
 	"net"
 	"testing"
 )
@@ -73,4 +74,80 @@ func TestBasicWhitelist(t *testing.T) {
 	if checkIPString(wl, "127.0.0.1", t) {
 		t.Fatal("whitelist should have denied address")
 	}
+}
+
+var nlu NetConnLookup
+var shutdown = make(chan struct{}, 1)
+var proceed = make(chan struct{}, 0)
+
+func setupTestServer(t *testing.T, wl Whitelist) {
+	ln, err := net.Listen("tcp", "127.0.0.1:4141")
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	proceed <- struct{}{}
+	for {
+		select {
+		case _, ok := <-shutdown:
+			if !ok {
+				return
+			}
+		default:
+			conn, err := ln.Accept()
+			if err != nil {
+				t.Fatalf("%v", err)
+			}
+			go handleTestConnection(conn, wl, t)
+		}
+	}
+}
+
+func handleTestConnection(conn net.Conn, wl Whitelist, t *testing.T) {
+	defer conn.Close()
+	ip, err := nlu.Address(conn)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	if wl.Permitted(ip) {
+		conn.Write([]byte("OK"))
+	} else {
+		conn.Write([]byte("NO"))
+	}
+}
+
+func TestNetConn(t *testing.T) {
+	wl := NewBasic()
+	defer close(shutdown)
+
+	go setupTestServer(t, wl)
+	<-proceed
+
+	conn, err := net.Dial("tcp", "127.0.0.1:4141")
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	body, err := ioutil.ReadAll(conn)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	if string(body) != "NO" {
+		t.Fatalf("Expected NO, but received %s", body)
+	}
+	conn.Close()
+
+	addIPString(wl, "127.0.0.1", t)
+	conn, err = net.Dial("tcp", "127.0.0.1:4141")
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	body, err = ioutil.ReadAll(conn)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	if string(body) != "OK" {
+		t.Fatalf("Expected OK, but received %s", body)
+	}
+	conn.Close()
+
 }

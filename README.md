@@ -18,15 +18,15 @@ There are currently two implementations of `ACL` provided in
 this package:
 
 * `Basic` converts the IP addresses to strings and contains a
-  set of string addresses as the whitelist. The set is implemented as a
-  `map[string]bool`, and uses a `sync.RWMutex` to coordinate updates to
-  the whitelist.
-* `Stub` is a stand-in whitelist that always permits
-  addresses. It is vocal about logging warning messages noting
-  that whitelisting is stubbed. It is designed to be used in cases
-  where whitelisting is desired, but the mechanics of whitelisting
-  (i.e. administration of the whitelist) is not yet implemented,
-  perhaps to keep whitelists in the system's flow.
+  set of string addresses as the whitelist. The set is implemented
+  as a `map[string]bool`, and uses a `sync.RWMutex` to coordinate
+  updates to the whitelist.
+* `Stub` is a stand-in whitelist that always permits addresses. It
+  is vocal about logging warning messages noting that whitelisting is
+  stubbed. It is designed to be used in cases where whitelisting is
+  desired, but the mechanics of whitelisting (i.e. administration of
+  the whitelist) is not yet implemented, perhaps to keep whitelists
+  in the system's flow.
 
 Two convenience functions are provided here for extracting IP addresses:
 
@@ -43,9 +43,9 @@ requests against the whitelist.
 ### Example `http.Handler`
 
 This is a file server that uses a pair of whitelists. The admin
-whitelist permits modifications to the the user whitelist only by
-the localhost. The user whitelist controls which hosts have access
-to the file server.
+whitelist permits modifications to the user whitelist only by the
+localhost. The user whitelist controls which hosts have access to
+the file server.
 
 ```
 package main

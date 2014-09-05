@@ -38,6 +38,10 @@ type BasicWhitelist struct {
 
 // Permitted returns true if the IP has been whitelisted.
 func (wl *BasicWhitelist) Permitted(ip net.IP) bool {
+	if ip == nil {
+		return false
+	}
+
 	wl.RLock()
 	defer wl.RUnlock()
 	return wl.ipList[ip.String()]
@@ -45,6 +49,10 @@ func (wl *BasicWhitelist) Permitted(ip net.IP) bool {
 
 // Add whitelists an IP.
 func (wl *BasicWhitelist) Add(ip net.IP) {
+	if ip == nil {
+		return
+	}
+
 	wl.Lock()
 	defer wl.Unlock()
 	wl.ipList[ip.String()] = true
@@ -52,6 +60,10 @@ func (wl *BasicWhitelist) Add(ip net.IP) {
 
 // Remove clears the IP from the whitelist.
 func (wl *BasicWhitelist) Remove(ip net.IP) {
+	if ip == nil {
+		return
+	}
+
 	wl.Lock()
 	defer wl.Unlock()
 	delete(wl.ipList, ip.String())

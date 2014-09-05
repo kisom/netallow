@@ -45,4 +45,79 @@ requests against the whitelist.
 
 ### Example `http.Handler`
 
+This is a file server that uses a pair of whitelists. The admin
+whitelist permits modifications to the the user whitelist only by
+the localhost. The user whitelist controls which hosts have access
+to the file server.
 
+```
+package main
+
+import (
+	"flag"
+	"fmt"
+	"log"
+	"net"
+	"net/http"
+
+	"github.com/kisom/whitelist"
+)
+
+var wl = whitelist.NewBasic()
+
+func addIP(w http.ResponseWriter, r *http.Request) {
+	addr := r.FormValue("ip")
+
+	ip := net.ParseIP(addr)
+	wl.Add(ip)
+	w.Write([]byte(fmt.Sprintf("Added %s to whitelist.\n", ip)))
+}
+
+func delIP(w http.ResponseWriter, r *http.Request) {
+	addr := r.FormValue("ip")
+
+	ip := net.ParseIP(addr)
+	wl.Remove(ip)
+	w.Write([]byte(fmt.Sprintf("Added %s to whitelist.\n", ip)))
+}
+
+func dumpWhitelist(w http.ResponseWriter, r *http.Request) {
+	w.Write(whitelist.DumpBasic(wl))
+}
+
+type handler struct {
+	h func(http.ResponseWriter, *http.Request)
+}
+
+func newHandler(h func(w http.ResponseWriter, r *http.Request)) http.Handler {
+	return &handler{h: h}
+}
+
+func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.h(w, r)
+}
+
+func main() {
+	root := flag.String("root", "files/", "file server root")
+	flag.Parse()
+
+	fileServer := http.StripPrefix("/files/",
+		http.FileServer(http.Dir(*root)))
+	wl.Add(net.IP{127, 0, 0, 1})
+
+	adminWL := whitelist.NewBasic()
+	adminWL.Add(net.IP{127, 0, 0, 1})
+	adminWL.Add(net.ParseIP("::1"))
+
+	protFiles := whitelist.NewHandler(fileServer, nil, wl)
+	http.Handle("/files/", protFiles)
+	http.Handle("/add", whitelist.NewHandler(newHandler(addIP),
+		nil, adminWL))
+	http.Handle("/del", whitelist.NewHandler(newHandler(delIP),
+		nil, adminWL))
+	http.Handle("/dump", whitelist.NewHandler(newHandler(dumpWhitelist),
+		nil, adminWL))
+
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+```

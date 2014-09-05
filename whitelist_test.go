@@ -82,6 +82,10 @@ func TestBasicWhitelist(t *testing.T) {
 	if checkIPString(wl, "127.0.0.1", t) {
 		t.Fatal("whitelist should have denied address")
 	}
+
+	wl.Add(nil)
+	wl.Remove(nil)
+	wl.Permitted(nil)
 }
 
 func TestStubWhitelist(t *testing.T) {

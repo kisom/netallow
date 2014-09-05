@@ -33,7 +33,7 @@ func (lu NetConnLookup) Address(args ...interface{}) (net.IP, error) {
 
 	netAddr := conn.RemoteAddr()
 	if netAddr == nil {
-		return nil, errors.New("No error returned")
+		return nil, errors.New("whitelist: no address returned")
 	}
 
 	addr, _, err := net.SplitHostPort(netAddr.String())

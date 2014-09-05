@@ -38,7 +38,7 @@ func testHTTPResponse(url string, t *testing.T) string {
 
 func TestStubHTTP(t *testing.T) {
 	wl := NewStub()
-	h := NewWhitelistHandler(testAllowHandler, testDenyHandler, wl)
+	h := NewHandler(testAllowHandler, testDenyHandler, wl)
 	srv := httptest.NewServer(h)
 	defer srv.Close()
 
@@ -62,7 +62,7 @@ func TestStubHTTP(t *testing.T) {
 
 func TestBasicHTTP(t *testing.T) {
 	wl := NewBasic()
-	h := NewWhitelistHandler(testAllowHandler, testDenyHandler, wl)
+	h := NewHandler(testAllowHandler, testDenyHandler, wl)
 	srv := httptest.NewServer(h)
 	defer srv.Close()
 
@@ -81,5 +81,16 @@ func TestBasicHTTP(t *testing.T) {
 	response = testHTTPResponse(srv.URL, t)
 	if response != "NO" {
 		t.Fatalf("Expected NO, but got %s", response)
+	}
+}
+
+func TestFailHTTP(t *testing.T) {
+	wl := NewBasic()
+	h := NewHandler(testAllowHandler, testDenyHandler, wl)
+	w := httptest.NewRecorder()
+	req := new(http.Request)
+
+	if h.ServeHTTP(w, req); w.Code != http.StatusInternalServerError {
+		t.Fatalf("Expect HTTP 500, but got HTTP %d", w.Code)
 	}
 }

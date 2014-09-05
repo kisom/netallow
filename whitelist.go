@@ -46,6 +46,7 @@ func (wl *BasicWhitelist) Remove(ip net.IP) {
 	delete(wl.ipList, ip.String())
 }
 
+// NewBasic returns a new initialised basic whitelist.
 func NewBasic() *BasicWhitelist {
 	return &BasicWhitelist{
 		ipList: map[string]bool{},

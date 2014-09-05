@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"testing"
 )
 
@@ -167,5 +168,41 @@ func TestNetConn(t *testing.T) {
 		t.Fatalf("Expected OK, but received %s", body)
 	}
 	conn.Close()
+
+}
+
+func TestNetConnChecks(t *testing.T) {
+	var nlu NetConnLookup
+	if _, err := nlu.Address(); err == nil {
+		t.Fatal("Address should fail with no arguments")
+	}
+
+	if _, err := nlu.Address(nil, nil); err == nil {
+		t.Fatal("Address should fail with too many arguments")
+	}
+
+	if _, err := nlu.Address(nil); err == nil {
+		t.Fatal("Address should fail with an invalid argument")
+	}
+}
+
+func TestHTTPRequestLookup(t *testing.T) {
+	var nlu HTTPRequestLookup
+	if _, err := nlu.Address(); err == nil {
+		t.Fatal("Address should fail with no arguments")
+	}
+
+	if _, err := nlu.Address(nil, nil); err == nil {
+		t.Fatal("Address should fail with too many arguments")
+	}
+
+	if _, err := nlu.Address(nil); err == nil {
+		t.Fatal("Address should fail with an invalid argument")
+	}
+
+	req := new(http.Request)
+	if _, err := nlu.Address(req); err == nil {
+		t.Fatal("Address should fail with an invalid argument")
+	}
 
 }

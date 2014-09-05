@@ -13,7 +13,7 @@ type Lookup interface {
 	Address(...interface{}) (net.IP, error)
 }
 
-// NetConn implements the Lookup interface for net.Conn connections.
+// NetConnLookup implements the Lookup interface for net.Conn connections.
 type NetConnLookup struct{}
 
 // Address extracts an IP from the remote address in the net.Conn. A
@@ -74,21 +74,20 @@ func (lu HTTPRequestLookup) Address(args ...interface{}) (net.IP, error) {
 
 }
 
-// WhitelistHandler wraps an HTTP handler with IP whitelisting.
-type WhitelistHandler struct {
+// Handler wraps an HTTP handler with IP whitelisting.
+type Handler struct {
 	allowHandler http.Handler
 	denyHandler  http.Handler
 	whitelist    Whitelist
 	lookup       Lookup
 }
 
-// NewWhitelistHandler returns a new whitelisting-wrapped HTTP
-// handler. The allow handler should contain a handler that will be
-// called if the request is whitelisted; the deny handler should
-// contain a handler that will be called in the request is not
-// whitelisted.
-func NewWhitelistHandler(allow, deny http.Handler, wl Whitelist) http.Handler {
-	return &WhitelistHandler{
+// NewHandler returns a new whitelisting-wrapped HTTP handler. The
+// allow handler should contain a handler that will be called if the
+// request is whitelisted; the deny handler should contain a handler
+// that will be called in the request is not whitelisted.
+func NewHandler(allow, deny http.Handler, wl Whitelist) http.Handler {
+	return &Handler{
 		allowHandler: allow,
 		denyHandler:  deny,
 		whitelist:    wl,
@@ -97,7 +96,7 @@ func NewWhitelistHandler(allow, deny http.Handler, wl Whitelist) http.Handler {
 }
 
 // ServeHTTP wraps the request in a whitelist check.
-func (h *WhitelistHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	ip, err := h.lookup.Address(req)
 	if err != nil {
 		log.Printf("failed to lookup request address: %v", err)

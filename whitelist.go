@@ -3,8 +3,11 @@
 package whitelist
 
 import (
+	"errors"
 	"log"
 	"net"
+	"sort"
+	"strings"
 	"sync"
 )
 
@@ -59,6 +62,38 @@ func NewBasic() *BasicWhitelist {
 	return &BasicWhitelist{
 		ipList: map[string]bool{},
 	}
+}
+
+// DumpBasic returns a whitelist as a byte slice where each IP is on
+// its own line.
+func DumpBasic(wl *BasicWhitelist) []byte {
+	wl.RLock()
+	defer wl.RUnlock()
+
+	var addrs []string
+	for ip := range wl.ipList {
+		addrs = append(addrs, ip)
+	}
+
+	sort.Strings(addrs)
+
+	addrList := strings.Join(addrs, "\n")
+	return []byte(addrList)
+}
+
+// LoadBasic loads a whitelist from a byteslice.
+func LoadBasic(in []byte) (*BasicWhitelist, error) {
+	wl := NewBasic()
+	addrs := strings.Split(string(in), "\n")
+
+	for _, addr := range addrs {
+		ip := net.ParseIP(addr)
+		if ip == nil {
+			return nil, errors.New("whitelist: invalid address")
+		}
+		wl.Add(ip)
+	}
+	return wl, nil
 }
 
 // StubWhitelist allows whitelisting to be added into a system's flow

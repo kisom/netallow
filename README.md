@@ -42,3 +42,7 @@ There is also an `http.Handler` implementation that wraps a pair of
 handlers, one for the case where the IP is permitted, and one for the
 case where the IP is denied, in a handler that will check incoming
 requests against the whitelist.
+
+### Example `http.Handler`
+
+

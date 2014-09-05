@@ -1,6 +1,7 @@
 package whitelist
 
 import (
+	"bytes"
 	"errors"
 	"io/ioutil"
 	"net"
@@ -175,6 +176,31 @@ func TestNetConn(t *testing.T) {
 	}
 	conn.Close()
 
+}
+
+func TestBasicDumpLoad(t *testing.T) {
+	wl := NewBasic()
+	addIPString(wl, "127.0.0.1", t)
+	addIPString(wl, "10.0.1.15", t)
+	addIPString(wl, "192.168.1.5", t)
+
+	out := DumpBasic(wl)
+	loaded, err := LoadBasic(out)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	dumped := DumpBasic(loaded)
+	if !bytes.Equal(out, dumped) {
+		t.Fatalf("dump -> load failed")
+	}
+}
+
+func TestBasicFailedLoad(t *testing.T) {
+	dump := []byte("192.168.1.5\n192.168.2.3\n192.168.2\n192.168.3.1")
+	if _, err := LoadBasic(dump); err == nil {
+		t.Fatalf("LoadBasic should fail on invalid IP address")
+	}
 }
 
 func TestNetConnChecks(t *testing.T) {

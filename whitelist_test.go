@@ -34,7 +34,7 @@ func (lu StringLookup) Address(args ...interface{}) (net.IP, error) {
 
 var slu StringLookup
 
-func checkIPString(wl Whitelist, addr string, t *testing.T) bool {
+func checkIPString(wl ACL, addr string, t *testing.T) bool {
 	ip, err := slu.Address(addr)
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -43,7 +43,7 @@ func checkIPString(wl Whitelist, addr string, t *testing.T) bool {
 	return wl.Permitted(ip)
 }
 
-func addIPString(wl Whitelist, addr string, t *testing.T) {
+func addIPString(wl ACL, addr string, t *testing.T) {
 	ip, err := slu.Address(addr)
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -52,7 +52,7 @@ func addIPString(wl Whitelist, addr string, t *testing.T) {
 	wl.Add(ip)
 }
 
-func delIPString(wl Whitelist, addr string, t *testing.T) {
+func delIPString(wl ACL, addr string, t *testing.T) {
 	ip, err := slu.Address(addr)
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -109,7 +109,7 @@ func TestStubWhitelist(t *testing.T) {
 var shutdown = make(chan struct{}, 1)
 var proceed = make(chan struct{}, 0)
 
-func setupTestServer(t *testing.T, wl Whitelist) {
+func setupTestServer(t *testing.T, wl ACL) {
 	ln, err := net.Listen("tcp", "127.0.0.1:4141")
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -131,7 +131,7 @@ func setupTestServer(t *testing.T, wl Whitelist) {
 	}
 }
 
-func handleTestConnection(conn net.Conn, wl Whitelist, t *testing.T) {
+func handleTestConnection(conn net.Conn, wl ACL, t *testing.T) {
 	defer conn.Close()
 	ip, err := NetConnLookup(conn)
 	if err != nil {

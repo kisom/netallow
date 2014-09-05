@@ -11,9 +11,9 @@ import (
 	"sync"
 )
 
-// A Whitelist stores a list of permitted IP addresses, and handles
+// An ACL stores a list of permitted IP addresses, and handles
 // concurrency as needed.
-type Whitelist interface {
+type ACL interface {
 	// Permitted takes an IP address, and returns true if the
 	// IP address is whitelisted (e.g. permitted access).
 	Permitted(net.IP) bool
@@ -31,13 +31,13 @@ type Whitelist interface {
 // RWMutex for conccurency. IPv4 addresses are treated differently
 // than an IPv6 address; namely, the IPv4 localhost will not match
 // the IPv6 localhost.
-type BasicWhitelist struct {
+type Basic struct {
 	sync.RWMutex
 	ipList map[string]bool
 }
 
 // Permitted returns true if the IP has been whitelisted.
-func (wl *BasicWhitelist) Permitted(ip net.IP) bool {
+func (wl *Basic) Permitted(ip net.IP) bool {
 	if ip == nil {
 		return false
 	}
@@ -48,7 +48,7 @@ func (wl *BasicWhitelist) Permitted(ip net.IP) bool {
 }
 
 // Add whitelists an IP.
-func (wl *BasicWhitelist) Add(ip net.IP) {
+func (wl *Basic) Add(ip net.IP) {
 	if ip == nil {
 		return
 	}
@@ -59,7 +59,7 @@ func (wl *BasicWhitelist) Add(ip net.IP) {
 }
 
 // Remove clears the IP from the whitelist.
-func (wl *BasicWhitelist) Remove(ip net.IP) {
+func (wl *Basic) Remove(ip net.IP) {
 	if ip == nil {
 		return
 	}
@@ -70,15 +70,15 @@ func (wl *BasicWhitelist) Remove(ip net.IP) {
 }
 
 // NewBasic returns a new initialised basic whitelist.
-func NewBasic() *BasicWhitelist {
-	return &BasicWhitelist{
+func NewBasic() *Basic {
+	return &Basic{
 		ipList: map[string]bool{},
 	}
 }
 
 // DumpBasic returns a whitelist as a byte slice where each IP is on
 // its own line.
-func DumpBasic(wl *BasicWhitelist) []byte {
+func DumpBasic(wl *Basic) []byte {
 	wl.RLock()
 	defer wl.RUnlock()
 
@@ -94,7 +94,7 @@ func DumpBasic(wl *BasicWhitelist) []byte {
 }
 
 // LoadBasic loads a whitelist from a byteslice.
-func LoadBasic(in []byte) (*BasicWhitelist, error) {
+func LoadBasic(in []byte) (*Basic, error) {
 	wl := NewBasic()
 	addrs := strings.Split(string(in), "\n")
 
@@ -113,27 +113,27 @@ func LoadBasic(in []byte) (*BasicWhitelist, error) {
 // messages being printed to stderr. There is no mechanism for
 // squelching these messages short of modifying the log package's
 // default logger.
-type StubWhitelist struct{}
+type Stub struct{}
 
 // Permitted always returns true, but prints a warning message alerting
 // that whitelisting is stubbed.
-func (wl *StubWhitelist) Permitted(ip net.IP) bool {
+func (wl *Stub) Permitted(ip net.IP) bool {
 	log.Printf("WARNING: whitelist check for %s but whitelisting is stubbed", ip)
 	return true
 }
 
 // Add prints a warning message about whitelisting being stubbed.
-func (wl *StubWhitelist) Add(ip net.IP) {
+func (wl *Stub) Add(ip net.IP) {
 	log.Printf("WARNING: IP %s added to whitelist but whitelisting is stubbed", ip)
 }
 
 // Remove prints a warning message about whitelisting being stubbed.
-func (wl *StubWhitelist) Remove(ip net.IP) {
+func (wl *Stub) Remove(ip net.IP) {
 	log.Printf("WARNING: IP %s removed from whitelist but whitelisting is stubbed", ip)
 }
 
 // NewStub returns a new stubbed whitelister.
-func NewStub() *StubWhitelist {
+func NewStub() *Stub {
 	log.Println("WARNING: whitelisting is being stubbed")
-	return &StubWhitelist{}
+	return &Stub{}
 }

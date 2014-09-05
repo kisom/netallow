@@ -5,7 +5,7 @@
 This is a simple whitelisting package that encompasses several common
 patterns into a reusable package.
 
-The basic type of a whitelist is the `Whitelist` type, which provides
+The basic type of a whitelist is the `ACL` type, which provides
 three methods on `net.IP` values:
 
 * `Permitted` determines whether the IP address is whitelisted and
@@ -14,14 +14,14 @@ three methods on `net.IP` values:
 * `Add` whitelists the IP address.
 * `Remove` drops the IP address from the whitelist.
 
-There are currently two implementations of `Whitelist` provided in
+There are currently two implementations of `ACL` provided in
 this package:
 
-* `BasicWhitelist` converts the IP addresses to strings and contains a
+* `Basic` converts the IP addresses to strings and contains a
   set of string addresses as the whitelist. The set is implemented as a
   `map[string]bool`, and uses a `sync.RWMutex` to coordinate updates to
   the whitelist.
-* `StubWhitelist` is a stand-in whitelist that always permits
+* `Stub` is a stand-in whitelist that always permits
   addresses. It is vocal about logging warning messages noting
   that whitelisting is stubbed. It is designed to be used in cases
   where whitelisting is desired, but the mechanics of whitelisting

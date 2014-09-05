@@ -49,14 +49,14 @@ func HTTPRequestLookup(req *http.Request) (net.IP, error) {
 type Handler struct {
 	allowHandler http.Handler
 	denyHandler  http.Handler
-	whitelist    Whitelist
+	whitelist    ACL
 }
 
 // NewHandler returns a new whitelisting-wrapped HTTP handler. The
 // allow handler should contain a handler that will be called if the
 // request is whitelisted; the deny handler should contain a handler
 // that will be called in the request is not whitelisted.
-func NewHandler(allow, deny http.Handler, wl Whitelist) http.Handler {
+func NewHandler(allow, deny http.Handler, wl ACL) http.Handler {
 	return &Handler{
 		allowHandler: allow,
 		denyHandler:  deny,

@@ -3,6 +3,7 @@
 package whitelist
 
 import (
+	"log"
 	"net"
 	"sync"
 )
@@ -49,4 +50,34 @@ func NewBasic() *BasicWhitelist {
 	return &BasicWhitelist{
 		ipList: map[string]bool{},
 	}
+}
+
+// StubWhitelist allows whitelisting to be added into a system's flow
+// without doing anything yet. All operations result in warning log
+// messages being printed to stderr. There is no mechanism for
+// squelching these messages short of modifying the log package's
+// default logger.
+type StubWhitelist struct{}
+
+// Permitted always returns true, but prints a warning message alerting
+// that whitelisting is stubbed.
+func (wl *StubWhitelist) Permitted(ip net.IP) bool {
+	log.Printf("WARNING: whitelist check for %s but whitelisting is stubbed", ip)
+	return true
+}
+
+// Add prints a warning message about whitelisting being stubbed.
+func (wl *StubWhitelist) Add(ip net.IP) {
+	log.Printf("WARNING: IP %s added to whitelist but whitelisting is stubbed", ip)
+}
+
+// Remove prints a warning message about whitelisting being stubbed.
+func (wl *StubWhitelist) Remove(ip net.IP) {
+	log.Printf("WARNING: IP %s removed from whitelist but whitelisting is stubbed", ip)
+}
+
+// NewStub returns a new stubbed whitelister.
+func NewStub() *StubWhitelist {
+	log.Println("WARNING: whitelisting is being stubbed")
+	return &StubWhitelist{}
 }

@@ -76,6 +76,24 @@ func TestBasicWhitelist(t *testing.T) {
 	}
 }
 
+func TestStubWhitelist(t *testing.T) {
+	wl := NewStub()
+
+	if !checkIPString(wl, "127.0.0.1", t) {
+		t.Fatal("whitelist should have permitted address")
+	}
+
+	addIPString(wl, "127.0.0.1", t)
+	if !checkIPString(wl, "127.0.0.1", t) {
+		t.Fatal("whitelist should have permitted address")
+	}
+
+	delIPString(wl, "127.0.0.1", t)
+	if !checkIPString(wl, "127.0.0.1", t) {
+		t.Fatal("whitelist should have permitted address")
+	}
+}
+
 var nlu NetConnLookup
 var shutdown = make(chan struct{}, 1)
 var proceed = make(chan struct{}, 0)

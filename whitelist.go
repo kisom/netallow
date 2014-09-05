@@ -27,7 +27,7 @@ type ACL interface {
 	Remove(net.IP)
 }
 
-// A BasicWhitelist is a basic map-backed whitelister that uses an
+// Basic implements a basic map-backed whitelister that uses an
 // RWMutex for conccurency. IPv4 addresses are treated differently
 // than an IPv6 address; namely, the IPv4 localhost will not match
 // the IPv6 localhost.
@@ -108,7 +108,7 @@ func LoadBasic(in []byte) (*Basic, error) {
 	return wl, nil
 }
 
-// StubWhitelist allows whitelisting to be added into a system's flow
+// Stub allows whitelisting to be added into a system's flow
 // without doing anything yet. All operations result in warning log
 // messages being printed to stderr. There is no mechanism for
 // squelching these messages short of modifying the log package's

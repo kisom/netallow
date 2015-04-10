@@ -85,3 +85,48 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 }
+
+// A HandlerFunc contains a pair of http.HandleFunc-handler functions
+// that will be called depending on whether a request is allowed or
+// denied.
+type HandlerFunc struct {
+	allow     func(http.ResponseWriter, *http.Request)
+	deny      func(http.ResponseWriter, *http.Request)
+	whitelist ACL
+}
+
+// NewHandleFunc returns a new basic whitelisting handler.
+func NewHandlerFunc(allow, deny func(http.ResponseWriter, *http.Request), acl ACL) (*HandlerFunc, error) {
+	if allow == nil {
+		return nil, errors.New("whitelist: allow cannot be nil")
+	}
+	return &HandlerFunc{
+		allow:     allow,
+		deny:      deny,
+		whitelist: acl,
+	}, nil
+}
+
+// ServeHTTP checks the incoming request to see whether it is permitted,
+// and calls the appropriate handle function.
+func (h *HandlerFunc) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	ip, err := HTTPRequestLookup(req)
+	if err != nil {
+		log.Printf("failed to lookup request address: %v", err)
+		status := http.StatusInternalServerError
+		http.Error(w, http.StatusText(status), status)
+		return
+	}
+
+	if h.whitelist.Permitted(ip) {
+		h.allow(w, req)
+	} else {
+		if h.deny == nil {
+			status := http.StatusUnauthorized
+			http.Error(w, http.StatusText(status), status)
+		} else {
+			h.deny(w, req)
+		}
+		h.deny(w, req)
+	}
+}

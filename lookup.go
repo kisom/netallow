@@ -95,7 +95,7 @@ type HandlerFunc struct {
 	whitelist ACL
 }
 
-// NewHandleFunc returns a new basic whitelisting handler.
+// NewHandlerFunc returns a new basic whitelisting handler.
 func NewHandlerFunc(allow, deny func(http.ResponseWriter, *http.Request), acl ACL) (*HandlerFunc, error) {
 	if allow == nil {
 		return nil, errors.New("whitelist: allow cannot be nil")

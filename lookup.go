@@ -100,6 +100,11 @@ func NewHandlerFunc(allow, deny func(http.ResponseWriter, *http.Request), acl AC
 	if allow == nil {
 		return nil, errors.New("whitelist: allow cannot be nil")
 	}
+
+	if acl == nil {
+		return nil, errors.New("whitelist: ACL cannot be nil")
+	}
+
 	return &HandlerFunc{
 		allow:     allow,
 		deny:      deny,
@@ -127,6 +132,5 @@ func (h *HandlerFunc) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		} else {
 			h.deny(w, req)
 		}
-		h.deny(w, req)
 	}
 }

@@ -135,3 +135,79 @@ func TestFailHTTP(t *testing.T) {
 		t.Fatalf("Expect HTTP 500, but got HTTP %d", w.Code)
 	}
 }
+
+var testHandlerFunc *HandlerFunc
+
+func newTestHandlerFunc(m string) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(m))
+	}
+}
+
+var testAllowHandlerFunc = newTestHandlerFunc("OK")
+var testDenyHandlerFunc = newTestHandlerFunc("NO")
+
+func TestSetupHandlerFuncFails(t *testing.T) {
+	wl := NewBasic()
+	_, err := NewHandlerFunc(nil, testDenyHandlerFunc, wl)
+	if err == nil {
+		t.Fatal("expected NewHandlerFunc to fail with nil allow handler")
+	}
+
+	_, err = NewHandlerFunc(testAllowHandlerFunc, testDenyHandlerFunc, nil)
+	if err == nil {
+		t.Fatal("expected NewHandlerFunc to fail with nil whitelist")
+	}
+
+	_, err = NewHandlerFunc(testAllowHandlerFunc, nil, wl)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestSetupHandlerFunc(t *testing.T) {
+	wl := NewBasic()
+	h, err := NewHandlerFunc(testAllowHandlerFunc, testDenyHandlerFunc, wl)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	srv := httptest.NewServer(h)
+	defer srv.Close()
+
+	expected := "NO"
+	response := strings.TrimSpace(testHTTPResponse(srv.URL, t))
+	if response != expected {
+		t.Fatalf("Expected %s, but got %s", expected, response)
+	}
+
+	h.deny = nil
+	expected = "Unauthorized"
+	response = strings.TrimSpace(testHTTPResponse(srv.URL, t))
+	if response != expected {
+		t.Fatalf("Expected %s, but got %s", expected, response)
+	}
+
+	addIPString(wl, "127.0.0.1", t)
+	expected = "OK"
+	response = strings.TrimSpace(testHTTPResponse(srv.URL, t))
+	if response != expected {
+		t.Fatalf("Expected %s, but got %s", expected, response)
+	}
+}
+
+func TestFailHTTPFunc(t *testing.T) {
+	wl := NewBasic()
+	h, err := NewHandlerFunc(testAllowHandlerFunc, testDenyHandlerFunc, wl)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	w := httptest.NewRecorder()
+	req := new(http.Request)
+
+	if h.ServeHTTP(w, req); w.Code != http.StatusInternalServerError {
+		t.Fatalf("Expect HTTP 500, but got HTTP %d", w.Code)
+	}
+}
+

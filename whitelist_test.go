@@ -280,3 +280,13 @@ func TestStubConn(t *testing.T) {
 	}
 
 }
+
+func TestValidIP(t *testing.T) {
+	ip4 := []byte{127, 0, 0, 1}
+	ip6 := make([]byte, 16)
+	ip6[15] = 1
+
+	if !validIP(ip4) || !validIP(ip6) {
+		t.Fatal("Failed to validate an IPv4 or an IPv6 address")
+	}
+}

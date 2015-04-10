@@ -210,4 +210,3 @@ func TestFailHTTPFunc(t *testing.T) {
 		t.Fatalf("Expect HTTP 500, but got HTTP %d", w.Code)
 	}
 }
-

@@ -22,9 +22,17 @@ type ACL interface {
 	// that it is now permitted.
 	Add(net.IP)
 
+	// AddBlock takes an IP address range and adds it to the
+	// whitelist.
+	AddBlock(net.IP)
+
 	// Remove takes an IP address and drops it from the whitelist
 	// so that it is no longer permitted.
 	Remove(net.IP)
+
+	// RemoveBlock takes an IP address block and drops it from the
+	// whitelist.
+	RemoveBlock(net.IP)
 }
 
 func validIP(ip net.IP) bool {

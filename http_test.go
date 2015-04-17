@@ -48,9 +48,13 @@ func testWorker(url string, t *testing.T, wg *sync.WaitGroup) {
 	wg.Done()
 }
 
-func TestStubHTTP(t *testing.T) {
-	wl := NewStub()
-	h := NewHandler(testAllowHandler, testDenyHandler, wl)
+func TestHostStubHTTP(t *testing.T) {
+	wl := NewHostStub()
+	h, err := NewHandler(testAllowHandler, testDenyHandler, wl)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
 	srv := httptest.NewServer(h)
 	defer srv.Close()
 
@@ -72,9 +76,41 @@ func TestStubHTTP(t *testing.T) {
 	}
 }
 
+func TestNetStubHTTP(t *testing.T) {
+	wl := NewNetStub()
+	h, err := NewHandler(testAllowHandler, testDenyHandler, wl)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	srv := httptest.NewServer(h)
+	defer srv.Close()
+
+	response := testHTTPResponse(srv.URL, t)
+	if response != "OK" {
+		t.Fatalf("Expected OK, but got %s", response)
+	}
+
+	testAddNet(wl, "127.0.0.1/32", t)
+	response = testHTTPResponse(srv.URL, t)
+	if response != "OK" {
+		t.Fatalf("Expected OK, but got %s", response)
+	}
+
+	testDelNet(wl, "127.0.0.1/32", t)
+	response = testHTTPResponse(srv.URL, t)
+	if response != "OK" {
+		t.Fatalf("Expected OK, but got %s", response)
+	}
+}
+
 func TestBasicHTTP(t *testing.T) {
 	wl := NewBasic()
-	h := NewHandler(testAllowHandler, testDenyHandler, wl)
+	h, err := NewHandler(testAllowHandler, testDenyHandler, wl)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
 	srv := httptest.NewServer(h)
 	defer srv.Close()
 
@@ -98,7 +134,11 @@ func TestBasicHTTP(t *testing.T) {
 
 func TestBasicHTTPDefaultDeny(t *testing.T) {
 	wl := NewBasic()
-	h := NewHandler(testAllowHandler, nil, wl)
+	h, err := NewHandler(testAllowHandler, nil, wl)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
 	srv := httptest.NewServer(h)
 	defer srv.Close()
 
@@ -111,7 +151,11 @@ func TestBasicHTTPDefaultDeny(t *testing.T) {
 
 func TestBasicHTTPWorkers(t *testing.T) {
 	wl := NewBasic()
-	h := NewHandler(testAllowHandler, testDenyHandler, wl)
+	h, err := NewHandler(testAllowHandler, testDenyHandler, wl)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
 	srv := httptest.NewServer(h)
 	wg := new(sync.WaitGroup)
 	defer srv.Close()
@@ -127,7 +171,11 @@ func TestBasicHTTPWorkers(t *testing.T) {
 
 func TestFailHTTP(t *testing.T) {
 	wl := NewBasic()
-	h := NewHandler(testAllowHandler, testDenyHandler, wl)
+	h, err := NewHandler(testAllowHandler, testDenyHandler, wl)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
 	w := httptest.NewRecorder()
 	req := new(http.Request)
 
@@ -208,5 +256,162 @@ func TestFailHTTPFunc(t *testing.T) {
 
 	if h.ServeHTTP(w, req); w.Code != http.StatusInternalServerError {
 		t.Fatalf("Expect HTTP 500, but got HTTP %d", w.Code)
+	}
+}
+
+func TestBasicNetHTTP(t *testing.T) {
+	wl := NewBasicNet()
+	h, err := NewHandler(testAllowHandler, testDenyHandler, wl)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	srv := httptest.NewServer(h)
+	defer srv.Close()
+
+	response := testHTTPResponse(srv.URL, t)
+	if response != "NO" {
+		t.Fatalf("Expected NO, but got %s", response)
+	}
+
+	testAddNet(wl, "127.0.0.1/32", t)
+	response = testHTTPResponse(srv.URL, t)
+	if response != "OK" {
+		t.Fatalf("Expected OK, but got %s", response)
+	}
+
+	testDelNet(wl, "127.0.0.1/32", t)
+	response = testHTTPResponse(srv.URL, t)
+	if response != "NO" {
+		t.Fatalf("Expected NO, but got %s", response)
+	}
+}
+
+func TestBasicNetHTTPDefaultDeny(t *testing.T) {
+	wl := NewBasicNet()
+	h, err := NewHandler(testAllowHandler, nil, wl)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	srv := httptest.NewServer(h)
+	defer srv.Close()
+
+	expected := "Unauthorized"
+	response := strings.TrimSpace(testHTTPResponse(srv.URL, t))
+	if response != expected {
+		t.Fatalf("Expected %s, but got %s", expected, response)
+	}
+}
+
+func TestBasicNetHTTPWorkers(t *testing.T) {
+	wl := NewBasicNet()
+	h, err := NewHandler(testAllowHandler, testDenyHandler, wl)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	srv := httptest.NewServer(h)
+	wg := new(sync.WaitGroup)
+	defer srv.Close()
+
+	for i := 0; i < 16; i++ {
+		wg.Add(1)
+		go testWorker(srv.URL, t, wg)
+	}
+
+	wg.Wait()
+
+}
+
+func TestNetFailHTTP(t *testing.T) {
+	wl := NewBasicNet()
+	h, err := NewHandler(testAllowHandler, testDenyHandler, wl)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	w := httptest.NewRecorder()
+	req := new(http.Request)
+
+	if h.ServeHTTP(w, req); w.Code != http.StatusInternalServerError {
+		t.Fatalf("Expect HTTP 500, but got HTTP %d", w.Code)
+	}
+}
+
+func TestSetupNetHandlerFuncFails(t *testing.T) {
+	wl := NewBasicNet()
+	_, err := NewHandlerFunc(nil, testDenyHandlerFunc, wl)
+	if err == nil {
+		t.Fatal("expected NewHandlerFunc to fail with nil allow handler")
+	}
+
+	_, err = NewHandlerFunc(testAllowHandlerFunc, testDenyHandlerFunc, nil)
+	if err == nil {
+		t.Fatal("expected NewHandlerFunc to fail with nil whitelist")
+	}
+
+	_, err = NewHandlerFunc(testAllowHandlerFunc, nil, wl)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestSetupNetHandlerFunc(t *testing.T) {
+	wl := NewBasicNet()
+	h, err := NewHandlerFunc(testAllowHandlerFunc, testDenyHandlerFunc, wl)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	srv := httptest.NewServer(h)
+	defer srv.Close()
+
+	expected := "NO"
+	response := strings.TrimSpace(testHTTPResponse(srv.URL, t))
+	if response != expected {
+		t.Fatalf("Expected %s, but got %s", expected, response)
+	}
+
+	h.deny = nil
+	expected = "Unauthorized"
+	response = strings.TrimSpace(testHTTPResponse(srv.URL, t))
+	if response != expected {
+		t.Fatalf("Expected %s, but got %s", expected, response)
+	}
+
+	testAddNet(wl, "127.0.0.1/32", t)
+	expected = "OK"
+	response = strings.TrimSpace(testHTTPResponse(srv.URL, t))
+	if response != expected {
+		t.Fatalf("Expected %s, but got %s", expected, response)
+	}
+}
+
+func TestNetFailHTTPFunc(t *testing.T) {
+	wl := NewBasicNet()
+	h, err := NewHandlerFunc(testAllowHandlerFunc, testDenyHandlerFunc, wl)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	w := httptest.NewRecorder()
+	req := new(http.Request)
+
+	if h.ServeHTTP(w, req); w.Code != http.StatusInternalServerError {
+		t.Fatalf("Expect HTTP 500, but got HTTP %d", w.Code)
+	}
+}
+
+func TestHandlerFunc(t *testing.T) {
+	var acl ACL
+	_, err := NewHandler(testAllowHandler, testDenyHandler, acl)
+	if err == nil || err.Error() != "whitelist: ACL cannot be nil" {
+		t.Fatal("Expected error with nil allow handler.")
+	}
+
+	acl = NewBasic()
+	_, err = NewHandler(nil, testDenyHandler, acl)
+	if err == nil || err.Error() != "whitelist: allow cannot be nil" {
+		t.Fatal("Expected error with nil ACL.")
 	}
 }

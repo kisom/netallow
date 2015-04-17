@@ -56,12 +56,20 @@ type Handler struct {
 // allow handler should contain a handler that will be called if the
 // request is whitelisted; the deny handler should contain a handler
 // that will be called in the request is not whitelisted.
-func NewHandler(allow, deny http.Handler, wl ACL) http.Handler {
+func NewHandler(allow, deny http.Handler, acl ACL) (http.Handler, error) {
+	if allow == nil {
+		return nil, errors.New("whitelist: allow cannot be nil")
+	}
+
+	if acl == nil {
+		return nil, errors.New("whitelist: ACL cannot be nil")
+	}
+
 	return &Handler{
 		allowHandler: allow,
 		denyHandler:  deny,
-		whitelist:    wl,
-	}
+		whitelist:    acl,
+	}, nil
 }
 
 // ServeHTTP wraps the request in a whitelist check.

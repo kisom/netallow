@@ -2,6 +2,7 @@ package whitelist
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"net"
@@ -43,7 +44,7 @@ func checkIPString(wl ACL, addr string, t *testing.T) bool {
 	return wl.Permitted(ip)
 }
 
-func addIPString(wl ACL, addr string, t *testing.T) {
+func addIPString(wl HostACL, addr string, t *testing.T) {
 	ip, err := slu.Address(addr)
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -52,7 +53,7 @@ func addIPString(wl ACL, addr string, t *testing.T) {
 	wl.Add(ip)
 }
 
-func delIPString(wl ACL, addr string, t *testing.T) {
+func delIPString(wl HostACL, addr string, t *testing.T) {
 	ip, err := slu.Address(addr)
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -89,7 +90,7 @@ func TestBasicWhitelist(t *testing.T) {
 }
 
 func TestStubWhitelist(t *testing.T) {
-	wl := NewStub()
+	wl := NewHostStub()
 
 	if !checkIPString(wl, "127.0.0.1", t) {
 		t.Fatal("whitelist should have permitted address")
@@ -103,6 +104,47 @@ func TestStubWhitelist(t *testing.T) {
 	delIPString(wl, "127.0.0.1", t)
 	if !checkIPString(wl, "127.0.0.1", t) {
 		t.Fatal("whitelist should have permitted address")
+	}
+}
+
+func TestMarshalHost(t *testing.T) {
+	tv := map[string]*Basic{
+		"test-a": NewBasic(),
+		"test-b": NewBasic(),
+	}
+
+	ip := net.ParseIP("192.168.3.1")
+	tv["test-a"].Add(ip)
+
+	ip = net.ParseIP("192.168.3.2")
+	tv["test-a"].Add(ip)
+
+	if len(tv["test-a"].whitelist) != 2 {
+		t.Fatalf("Expected whitelist to have 2 addresses, but have %d", len(tv["test-a"].whitelist))
+	}
+
+	out, err := json.Marshal(tv)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var tvPrime map[string]*Basic
+	err = json.Unmarshal(out, &tvPrime)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestMarshalHostFail(t *testing.T) {
+	wl := NewBasic()
+	badInput := `192.168.3.1/24,127.0.0.1/32`
+	if err := wl.UnmarshalJSON([]byte(badInput)); err == nil {
+		t.Fatal("Expected failure unmarshaling bad JSON input.")
+	}
+
+	badInput = `"192.168.3.1/32,127.0.0.252/32"`
+	if err := wl.UnmarshalJSON([]byte(badInput)); err == nil {
+		t.Fatal("Expected failure unmarshaling bad JSON input.")
 	}
 }
 

@@ -40,18 +40,6 @@ func dumpWhitelist(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type handler struct {
-	h func(http.ResponseWriter, *http.Request)
-}
-
-func newHandler(h func(w http.ResponseWriter, r *http.Request)) http.Handler {
-	return &handler{h: h}
-}
-
-func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.h(w, r)
-}
-
 func main() {
 	root := flag.String("root", "files/", "file server root")
 	flag.Parse()

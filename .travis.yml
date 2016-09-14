@@ -1,8 +1,8 @@
 language: go
 go:
         - tip
-        - 1.4
-script: go get golang.org/x/tools/cmd/vet && go get golang.org/x/tools/cmd/goimports && go get github.com/golang/lint/golint && go get github.com/kisom/whitelist/... && [ -z "$($HOME/gopath/bin/golint *.go)" ] && go test github.com/kisom/whitelist/... && go vet github.com/kisom/whitelist/... && [ -z "$($HOME/gopath/bin/goimports -l *.go)" ]
+        - 1.7
+script: go get golang.org/x/tools/cmd/goimports && go get github.com/golang/lint/golint && go get github.com/kisom/whitelist/... && [ -z "$($HOME/gopath/bin/golint *.go)" ] && go test github.com/kisom/whitelist/... && go vet github.com/kisom/whitelist/... && [ -z "$($HOME/gopath/bin/goimports -l *.go)" ]
 notifications:
         email:
                 recipients:

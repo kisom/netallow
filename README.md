@@ -1,24 +1,23 @@
-## whitelist
+## netallow
 
-![Build Status](https://travis-ci.org/kisom/whitelist.svg)
+![Build Status](https://travis-ci.org/kisom/netallow.svg)
 
-This is a simple whitelisting package that encompasses several common
+This is a simple network ACL package encompassing several common
 patterns into a reusable package.
 
-The basic type of a whitelist is the `ACL` type, which provides
-a single method on a `net.IP` value:
+The basic type is the `ACL` type, which provides a single method on
+a `net.IP` value:
 
-* `Permitted` determines whether the IP address is whitelisted and
-  therefore should be permitted access. It should return true if the
-  address is whitelisted.
+* `Permitted` determines whether the IP address is permitted access. It
+  should return true if the address is permitted.
 
 Additionally, there are two other types that are built on the `ACL`
 type; the `HostACL` stores individual hosts and the `NetACL` stores
 networks. Each of these provides two functions that differ in the
 types of their arguments.
 
-* `Add` whitelists the IP address.
-* `Remove` drops the IP address from the whitelist.
+* `Add` permits the IP address.
+* `Remove` restrics a previously-permitted IP address.
 
 The `HostACL` operates on `net.IP` values, while the `NetACL` operates
 on `*net.IPNet`s.
@@ -27,23 +26,22 @@ There are currently four implementations of `ACL` provided in this
 package; a basic implementation of the two types of ACLs and a stub
 type for each:
 
-* `Basic` is a simple host-based whitelister that converts the IP
-  addresses to strings; the whitelist is implemented as a set of
-  string addresses. The set is implemented as a `map[string]bool`, and
-  uses a `sync.Mutex` to coordinate updates to the whitelist.
-* `BasicNet` is a simple network-based whitelister that similarly uses
+* `Basic` is a simple host-based ACL that converts the IP addresses
+  to strings; the ACL is implemented as a set of string addresses.
+  The set is implemented as a `map[string]bool`, and uses a `sync.Mutex`
+  to coordinate updates to the ACL.
+* `BasicNet` is a simple network-based ACL that similarly uses
   a mutex and an array to store networks. This has a number of
   limitations: operations are /O(n)/, and subsets/supersets of
   existing networks isn't detected. That is, if 192.168.3.0/24 is
-  removed from a whitelist that has 192.168.0.0/16 permitted, **that
-  subnet will not actually be removed**. Exact networks are required
-  for `Add` and `Remove` at this time.
-* `HostStub` and `NetStub` are stand-in whitelists that always permits
-  addresses. They are vocal about logging warning messages noting that
-  whitelisting is stubbed. They are designed to be used in cases where
-  whitelisting is desired, but the mechanics of whitelisting
-  (i.e. administration of the whitelist) is not yet implemented,
-  perhaps to keep whitelists in the system's flow.
+  removed from an ACL that has 192.168.0.0/16 permitted, **that subnet
+  will not actually be removed**. Exact networks are required for
+  `Add` and `Remove` at this time.
+* `HostStub` and `NetStub` are stand-in ACLs that always permit addresses.
+  They are vocal about logging warning messages noting that the ACL is
+  stubbed. They are designed to be used in cases where ACLs are desired,
+  but the mechanics of ACLs (i.e. administration) are not yet implemented,
+  perhaps to keep ACLs in the system's flow.
 
 Two convenience functions are provided here for extracting IP addresses:
 
@@ -52,7 +50,7 @@ Two convenience functions are provided here for extracting IP addresses:
 * `HTTPRequestLookup` accepts a `*http.Request` and returns the
   `net.IP` value from the request.
 
-There are also two functions for whitelisting HTTP endpoints:
+There are also two functions for ACL'ing HTTP endpoints:
 
 * `NewHandler` returns an `http.Handler`
 * `NewHandlerFunc` returns an `http.HandlerFunc`
@@ -61,10 +59,9 @@ These endpoints will work with both `HostACL` and `NetACL`.
 
 ### Example `http.Handler`
 
-This is a file server that uses a pair of whitelists. The admin
-whitelist permits modifications to the user whitelist only by the
-localhost. The user whitelist controls which hosts have access to
-the file server.
+This is a file server that uses a pair of ACLs. The admin ACL permits
+modifications to the user ACL only by the localhost. The user ACL
+controls which hosts have access to the file server.
 
 ```
 package main
@@ -77,31 +74,31 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/kisom/whitelist"
+	"github.com/kisom/netallow"
 )
 
-var wl = whitelist.NewBasic()
+var acl = netallow.NewBasic()
 
 func addIP(w http.ResponseWriter, r *http.Request) {
 	addr := r.FormValue("ip")
 
 	ip := net.ParseIP(addr)
-	wl.Add(ip)
-	log.Printf("request to add %s to the whitelist", addr)
-	w.Write([]byte(fmt.Sprintf("Added %s to whitelist.\n", addr)))
+	acl.Add(ip)
+	log.Printf("request to add %s to the ACL", addr)
+	w.Write([]byte(fmt.Sprintf("Added %s to ACL.\n", addr)))
 }
 
 func delIP(w http.ResponseWriter, r *http.Request) {
 	addr := r.FormValue("ip")
 
 	ip := net.ParseIP(addr)
-	wl.Remove(ip)
-	log.Printf("request to remove %s from the whitelist", addr)
-	w.Write([]byte(fmt.Sprintf("Removed %s from whitelist.\n", ip)))
+	acl.Remove(ip)
+	log.Printf("request to remove %s from the ACL", addr)
+	w.Write([]byte(fmt.Sprintf("Removed %s from ACL.\n", ip)))
 }
 
-func dumpWhitelist(w http.ResponseWriter, r *http.Request) {
-	out, err := json.Marshal(wl)
+func dumpACL(w http.ResponseWriter, r *http.Request) {
+	out, err := json.Marshal(acl)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	} else {
@@ -115,28 +112,28 @@ func main() {
 
 	fileServer := http.StripPrefix("/files/",
 		http.FileServer(http.Dir(*root)))
-	wl.Add(net.IP{127, 0, 0, 1})
+	acl.Add(net.IP{127, 0, 0, 1})
 
-	adminWL := whitelist.NewBasic()
-	adminWL.Add(net.IP{127, 0, 0, 1})
-	adminWL.Add(net.ParseIP("::1"))
+	adminACL := netallow.NewBasic()
+	adminACL.Add(net.IP{127, 0, 0, 1})
+	adminACL.Add(net.ParseIP("::1"))
 
-	protFiles, err := whitelist.NewHandler(fileServer, nil, wl)
+	protFiles, err := netallow.NewHandler(fileServer, nil, acl)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
 
-	addHandler, err := whitelist.NewHandlerFunc(addIP, nil, adminWL)
+	addHandler, err := netallow.NewHandlerFunc(addIP, nil, adminACL)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
 
-	delHandler, err := whitelist.NewHandlerFunc(delIP, nil, adminWL)
+	delHandler, err := netallow.NewHandlerFunc(delIP, nil, adminACL)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
 
-	dumpHandler, err := whitelist.NewHandlerFunc(dumpWhitelist, nil, adminWL)
+	dumpHandler, err := netallow.NewHandlerFunc(dumpACL, nil, adminACL)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}

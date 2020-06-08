@@ -1,4 +1,4 @@
-package whitelist
+package netallow
 
 import (
 	"encoding/json"
@@ -37,36 +37,36 @@ func TestMarshalNet(t *testing.T) {
 }
 
 func TestMarshalNetFail(t *testing.T) {
-	wl := NewBasicNet()
+	acl := NewBasicNet()
 	badInput := `192.168.3.1/24,127.0.0.1/32`
-	if err := wl.UnmarshalJSON([]byte(badInput)); err == nil {
+	if err := acl.UnmarshalJSON([]byte(badInput)); err == nil {
 		t.Fatal("Expected failure unmarshaling bad JSON input.")
 	}
 
 	badInput = `"192.168.3.1,127.0.0.256"`
-	if err := wl.UnmarshalJSON([]byte(badInput)); err == nil {
+	if err := acl.UnmarshalJSON([]byte(badInput)); err == nil {
 		t.Fatal("Expected failure unmarshaling bad JSON input.")
 	}
 }
 
 var testNet *BasicNet
 
-func testAddNet(wl NetACL, ns string, t *testing.T) {
+func testAddNet(acl NetACL, ns string, t *testing.T) {
 	_, n, err := net.ParseCIDR(ns)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
 
-	wl.Add(n)
+	acl.Add(n)
 }
 
-func testDelNet(wl NetACL, ns string, t *testing.T) {
+func testDelNet(acl NetACL, ns string, t *testing.T) {
 	_, n, err := net.ParseCIDR(ns)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
 
-	wl.Remove(n)
+	acl.Remove(n)
 }
 
 func TestAdd(t *testing.T) {

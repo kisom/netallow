@@ -1,4 +1,4 @@
-package whitelist
+package netallow
 
 import (
 	"io/ioutil"
@@ -49,8 +49,8 @@ func testWorker(url string, t *testing.T, wg *sync.WaitGroup) {
 }
 
 func TestHostStubHTTP(t *testing.T) {
-	wl := NewHostStub()
-	h, err := NewHandler(testAllowHandler, testDenyHandler, wl)
+	acl := NewHostStub()
+	h, err := NewHandler(testAllowHandler, testDenyHandler, acl)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -63,13 +63,13 @@ func TestHostStubHTTP(t *testing.T) {
 		t.Fatalf("Expected OK, but got %s", response)
 	}
 
-	addIPString(wl, "127.0.0.1", t)
+	addIPString(acl, "127.0.0.1", t)
 	response = testHTTPResponse(srv.URL, t)
 	if response != "OK" {
 		t.Fatalf("Expected OK, but got %s", response)
 	}
 
-	delIPString(wl, "127.0.0.1", t)
+	delIPString(acl, "127.0.0.1", t)
 	response = testHTTPResponse(srv.URL, t)
 	if response != "OK" {
 		t.Fatalf("Expected OK, but got %s", response)
@@ -77,8 +77,8 @@ func TestHostStubHTTP(t *testing.T) {
 }
 
 func TestNetStubHTTP(t *testing.T) {
-	wl := NewNetStub()
-	h, err := NewHandler(testAllowHandler, testDenyHandler, wl)
+	acl := NewNetStub()
+	h, err := NewHandler(testAllowHandler, testDenyHandler, acl)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -91,13 +91,13 @@ func TestNetStubHTTP(t *testing.T) {
 		t.Fatalf("Expected OK, but got %s", response)
 	}
 
-	testAddNet(wl, "127.0.0.1/32", t)
+	testAddNet(acl, "127.0.0.1/32", t)
 	response = testHTTPResponse(srv.URL, t)
 	if response != "OK" {
 		t.Fatalf("Expected OK, but got %s", response)
 	}
 
-	testDelNet(wl, "127.0.0.1/32", t)
+	testDelNet(acl, "127.0.0.1/32", t)
 	response = testHTTPResponse(srv.URL, t)
 	if response != "OK" {
 		t.Fatalf("Expected OK, but got %s", response)
@@ -105,8 +105,8 @@ func TestNetStubHTTP(t *testing.T) {
 }
 
 func TestBasicHTTP(t *testing.T) {
-	wl := NewBasic()
-	h, err := NewHandler(testAllowHandler, testDenyHandler, wl)
+	acl := NewBasic()
+	h, err := NewHandler(testAllowHandler, testDenyHandler, acl)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -119,13 +119,13 @@ func TestBasicHTTP(t *testing.T) {
 		t.Fatalf("Expected NO, but got %s", response)
 	}
 
-	addIPString(wl, "127.0.0.1", t)
+	addIPString(acl, "127.0.0.1", t)
 	response = testHTTPResponse(srv.URL, t)
 	if response != "OK" {
 		t.Fatalf("Expected OK, but got %s", response)
 	}
 
-	delIPString(wl, "127.0.0.1", t)
+	delIPString(acl, "127.0.0.1", t)
 	response = testHTTPResponse(srv.URL, t)
 	if response != "NO" {
 		t.Fatalf("Expected NO, but got %s", response)
@@ -133,8 +133,8 @@ func TestBasicHTTP(t *testing.T) {
 }
 
 func TestBasicHTTPDefaultDeny(t *testing.T) {
-	wl := NewBasic()
-	h, err := NewHandler(testAllowHandler, nil, wl)
+	acl := NewBasic()
+	h, err := NewHandler(testAllowHandler, nil, acl)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -150,8 +150,8 @@ func TestBasicHTTPDefaultDeny(t *testing.T) {
 }
 
 func TestBasicHTTPWorkers(t *testing.T) {
-	wl := NewBasic()
-	h, err := NewHandler(testAllowHandler, testDenyHandler, wl)
+	acl := NewBasic()
+	h, err := NewHandler(testAllowHandler, testDenyHandler, acl)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -170,8 +170,8 @@ func TestBasicHTTPWorkers(t *testing.T) {
 }
 
 func TestFailHTTP(t *testing.T) {
-	wl := NewBasic()
-	h, err := NewHandler(testAllowHandler, testDenyHandler, wl)
+	acl := NewBasic()
+	h, err := NewHandler(testAllowHandler, testDenyHandler, acl)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -196,26 +196,26 @@ var testAllowHandlerFunc = newTestHandlerFunc("OK")
 var testDenyHandlerFunc = newTestHandlerFunc("NO")
 
 func TestSetupHandlerFuncFails(t *testing.T) {
-	wl := NewBasic()
-	_, err := NewHandlerFunc(nil, testDenyHandlerFunc, wl)
+	acl := NewBasic()
+	_, err := NewHandlerFunc(nil, testDenyHandlerFunc, acl)
 	if err == nil {
 		t.Fatal("expected NewHandlerFunc to fail with nil allow handler")
 	}
 
 	_, err = NewHandlerFunc(testAllowHandlerFunc, testDenyHandlerFunc, nil)
 	if err == nil {
-		t.Fatal("expected NewHandlerFunc to fail with nil whitelist")
+		t.Fatal("expected NewHandlerFunc to fail with nil allowed")
 	}
 
-	_, err = NewHandlerFunc(testAllowHandlerFunc, nil, wl)
+	_, err = NewHandlerFunc(testAllowHandlerFunc, nil, acl)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
 }
 
 func TestSetupHandlerFunc(t *testing.T) {
-	wl := NewBasic()
-	h, err := NewHandlerFunc(testAllowHandlerFunc, testDenyHandlerFunc, wl)
+	acl := NewBasic()
+	h, err := NewHandlerFunc(testAllowHandlerFunc, testDenyHandlerFunc, acl)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -236,7 +236,7 @@ func TestSetupHandlerFunc(t *testing.T) {
 		t.Fatalf("Expected %s, but got %s", expected, response)
 	}
 
-	addIPString(wl, "127.0.0.1", t)
+	addIPString(acl, "127.0.0.1", t)
 	expected = "OK"
 	response = strings.TrimSpace(testHTTPResponse(srv.URL, t))
 	if response != expected {
@@ -245,8 +245,8 @@ func TestSetupHandlerFunc(t *testing.T) {
 }
 
 func TestFailHTTPFunc(t *testing.T) {
-	wl := NewBasic()
-	h, err := NewHandlerFunc(testAllowHandlerFunc, testDenyHandlerFunc, wl)
+	acl := NewBasic()
+	h, err := NewHandlerFunc(testAllowHandlerFunc, testDenyHandlerFunc, acl)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -260,8 +260,8 @@ func TestFailHTTPFunc(t *testing.T) {
 }
 
 func TestBasicNetHTTP(t *testing.T) {
-	wl := NewBasicNet()
-	h, err := NewHandler(testAllowHandler, testDenyHandler, wl)
+	acl := NewBasicNet()
+	h, err := NewHandler(testAllowHandler, testDenyHandler, acl)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -274,13 +274,13 @@ func TestBasicNetHTTP(t *testing.T) {
 		t.Fatalf("Expected NO, but got %s", response)
 	}
 
-	testAddNet(wl, "127.0.0.1/32", t)
+	testAddNet(acl, "127.0.0.1/32", t)
 	response = testHTTPResponse(srv.URL, t)
 	if response != "OK" {
 		t.Fatalf("Expected OK, but got %s", response)
 	}
 
-	testDelNet(wl, "127.0.0.1/32", t)
+	testDelNet(acl, "127.0.0.1/32", t)
 	response = testHTTPResponse(srv.URL, t)
 	if response != "NO" {
 		t.Fatalf("Expected NO, but got %s", response)
@@ -288,8 +288,8 @@ func TestBasicNetHTTP(t *testing.T) {
 }
 
 func TestBasicNetHTTPDefaultDeny(t *testing.T) {
-	wl := NewBasicNet()
-	h, err := NewHandler(testAllowHandler, nil, wl)
+	acl := NewBasicNet()
+	h, err := NewHandler(testAllowHandler, nil, acl)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -305,8 +305,8 @@ func TestBasicNetHTTPDefaultDeny(t *testing.T) {
 }
 
 func TestBasicNetHTTPWorkers(t *testing.T) {
-	wl := NewBasicNet()
-	h, err := NewHandler(testAllowHandler, testDenyHandler, wl)
+	acl := NewBasicNet()
+	h, err := NewHandler(testAllowHandler, testDenyHandler, acl)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -325,8 +325,8 @@ func TestBasicNetHTTPWorkers(t *testing.T) {
 }
 
 func TestNetFailHTTP(t *testing.T) {
-	wl := NewBasicNet()
-	h, err := NewHandler(testAllowHandler, testDenyHandler, wl)
+	acl := NewBasicNet()
+	h, err := NewHandler(testAllowHandler, testDenyHandler, acl)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -339,26 +339,26 @@ func TestNetFailHTTP(t *testing.T) {
 }
 
 func TestSetupNetHandlerFuncFails(t *testing.T) {
-	wl := NewBasicNet()
-	_, err := NewHandlerFunc(nil, testDenyHandlerFunc, wl)
+	acl := NewBasicNet()
+	_, err := NewHandlerFunc(nil, testDenyHandlerFunc, acl)
 	if err == nil {
 		t.Fatal("expected NewHandlerFunc to fail with nil allow handler")
 	}
 
 	_, err = NewHandlerFunc(testAllowHandlerFunc, testDenyHandlerFunc, nil)
 	if err == nil {
-		t.Fatal("expected NewHandlerFunc to fail with nil whitelist")
+		t.Fatal("expected NewHandlerFunc to fail with nil allowed")
 	}
 
-	_, err = NewHandlerFunc(testAllowHandlerFunc, nil, wl)
+	_, err = NewHandlerFunc(testAllowHandlerFunc, nil, acl)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
 }
 
 func TestSetupNetHandlerFunc(t *testing.T) {
-	wl := NewBasicNet()
-	h, err := NewHandlerFunc(testAllowHandlerFunc, testDenyHandlerFunc, wl)
+	acl := NewBasicNet()
+	h, err := NewHandlerFunc(testAllowHandlerFunc, testDenyHandlerFunc, acl)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -379,7 +379,7 @@ func TestSetupNetHandlerFunc(t *testing.T) {
 		t.Fatalf("Expected %s, but got %s", expected, response)
 	}
 
-	testAddNet(wl, "127.0.0.1/32", t)
+	testAddNet(acl, "127.0.0.1/32", t)
 	expected = "OK"
 	response = strings.TrimSpace(testHTTPResponse(srv.URL, t))
 	if response != expected {
@@ -388,8 +388,8 @@ func TestSetupNetHandlerFunc(t *testing.T) {
 }
 
 func TestNetFailHTTPFunc(t *testing.T) {
-	wl := NewBasicNet()
-	h, err := NewHandlerFunc(testAllowHandlerFunc, testDenyHandlerFunc, wl)
+	acl := NewBasicNet()
+	h, err := NewHandlerFunc(testAllowHandlerFunc, testDenyHandlerFunc, acl)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -405,13 +405,13 @@ func TestNetFailHTTPFunc(t *testing.T) {
 func TestHandlerFunc(t *testing.T) {
 	var acl ACL
 	_, err := NewHandler(testAllowHandler, testDenyHandler, acl)
-	if err == nil || err.Error() != "whitelist: ACL cannot be nil" {
+	if err == nil || err.Error() != "allowed: ACL cannot be nil" {
 		t.Fatal("Expected error with nil allow handler.")
 	}
 
 	acl = NewBasic()
 	_, err = NewHandler(nil, testDenyHandler, acl)
-	if err == nil || err.Error() != "whitelist: allow cannot be nil" {
+	if err == nil || err.Error() != "allowed: allow cannot be nil" {
 		t.Fatal("Expected error with nil ACL.")
 	}
 }

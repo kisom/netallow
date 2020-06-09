@@ -3,7 +3,14 @@ language: go
 go:
         - tip
         - 1.14
-script: go get golang.org/x/tools/cmd/goimports && go get golang.org/x/lint/golint && go get github.com/kisom/netallow/... && [ -z "$($HOME/gopath/bin/golint *.go)" ] && go test github.com/kisom/netallow/... && go vet github.com/kisom/netallow/... && [ -z "$($HOME/gopath/bin/goimports -l *.go)" ]
+script:
+        - go get golang.org/x/tools/cmd/goimports
+        - go get golang.org/x/lint/golint
+        - go get github.com/kisom/netallow/...
+        - [ -z "$(golint *.go)" ]
+        - go test github.com/kisom/netallow/...
+        - go vet github.com/kisom/netallow/... &&
+        - [ -z "$(goimports -l *.go)" ]
 notifications:
         email:
                 recipients:

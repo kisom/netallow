@@ -1,4 +1,4 @@
-// Package allowed implements IP access control lists (ACLS) for various
+// Package netallow implements IP access control lists (ACLS) for various
 // types of connections. Two types of ACLs are supported: host-based and
 // network-based.
 package netallow

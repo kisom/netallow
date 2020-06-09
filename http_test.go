@@ -404,14 +404,14 @@ func TestNetFailHTTPFunc(t *testing.T) {
 
 func TestHandlerFunc(t *testing.T) {
 	var acl ACL
-	_, err := NewHandler(testAllowHandler, testDenyHandler, acl)
-	if err == nil || err.Error() != "allowed: ACL cannot be nil" {
-		t.Fatal("Expected error with nil allow handler.")
+	_, err := NewHandler(testAllowHandler, testDenyHandler, nil)
+	if err == nil || err.Error() != "netallow: ACL cannot be nil" {
+		t.Fatal("Expected error with nil ACL.")
 	}
 
 	acl = NewBasic()
 	_, err = NewHandler(nil, testDenyHandler, acl)
-	if err == nil || err.Error() != "allowed: allow cannot be nil" {
-		t.Fatal("Expected error with nil ACL.")
+	if err == nil || err.Error() != "netallow: allow cannot be nil" {
+		t.Fatal("Expected error with nil allow handler.")
 	}
 }
